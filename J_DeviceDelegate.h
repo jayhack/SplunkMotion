@@ -29,8 +29,8 @@ public:
 	J_DeviceDelegate ();
 	~J_DeviceDelegate ();
 
-	/*--- getting frames ---*/
-	J_Frame * readFrame ();
+	/*--- getting skeletons ---*/
+	J_Frame * get_frame ();
 
 };
 

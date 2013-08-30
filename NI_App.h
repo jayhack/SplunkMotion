@@ -26,7 +26,6 @@
 
 /*--- My Files ---*/
 #include "Utilities.h"
-#include "J_StorageDelegate.h"
 #include "J_Drawer.h"
 
 
@@ -46,9 +45,6 @@ protected:
 	static NI_App * 	self;			/*static reference to the active instance*/
 	char				app_name[150];
 
-	/*--- Storage ---*/
-	J_StorageDelegate *storage_delegate;
-
 	/*--- Drawing --*/
 	J_Drawer drawer;
 
@@ -56,6 +52,9 @@ protected:
 	void initialize_APIs (int argc, char **argv);
 
 	/*--- OpenGL Inialization ---*/
+	void glut_idle ();
+	void glut_display ();
+	void glut_keyboard (unsigned char key, int x, int y);
 	virtual	void 	InitOpenGLHooks	() = 0;	
 	openni::Status 	InitOpenGL 		(int argc, char **argv);
 

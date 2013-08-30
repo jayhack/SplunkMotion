@@ -40,32 +40,11 @@ J_DeviceDelegate::J_DeviceDelegate () {
 		print_error ("Failed to open device", openni::OpenNI::getExtendedError());
 	}
 
-
 	/*### Step 3: allocate and initialize the user tracker, make sure it was opened correctly ###*/
 	user_tracker = new nite::UserTracker ();
 	if (user_tracker->create(device) != nite::STATUS_OK) {
 		print_error ("Could not create the user tracker", "Not sure what to do here...");
 	}
-
-
-	/*### Step 4: set up the color stream as well ###*/
-	rc = color_stream.create(*device, openni::SENSOR_COLOR);
-	if (rc == openni::STATUS_OK) {
-		rc = color_stream.start();
-		if (rc != openni::STATUS_OK) {
-			print_error ("J_DeviceDelegate", "the color stream is not starting");
-			color_stream.destroy();
-		}
-	}
-	else {
-		print_error ("J_DeviceDelegate", "Failed to find color stream");
-	}
-	if (!color_stream.isValid()) {
-		print_error ("J_DeviceDelegate", "the color stream is invalid. shutting down");
-		openni::OpenNI::shutdown();
-	}
-
-
 }
 
 
@@ -85,47 +64,26 @@ J_DeviceDelegate::~J_DeviceDelegate () {
 /*########################################################################################################################*/
 /* Function: readFrame
  * -------------------
- * this functino will return a pointer to the next J_Frame;
- * note that it will allocate the memory for it, so it is up to the user
- * to free the memory allocated for the received J_Frame somewhere down the line.
- * NOTE: this will also store the *absolute* coordinates of the skeleton in it. 
+ * reads in a frame and returns a vector of skeletons from it.
+ * Note: the user is responsible for deleting all of the skeletons in the returned vector!
  */
-J_Frame * J_DeviceDelegate::readFrame () {
+J_Frame * J_DeviceDelegate::get_frame () {
 
 	/*--- temporary objects we will use ---*/
 	nite::UserTrackerFrameRef userTrackerFrame;
-	openni::VideoFrameRef ni_depthFrame;
-	openni::VideoFrameRef ni_colorFrame;
 
-
-	/*### Step 1: get the color frame ###*/
-	// cout << "	- checking the validity of the color stream" << endl;
-	if (!color_stream.isValid()) {
-		print_error ("J_DeviceDelegate", "the color stream is invalid. shutting down");
-		openni::OpenNI::shutdown();
-	}
-	// cout << "	- about to read the actual frame" << endl;
-	color_stream.readFrame (&ni_colorFrame);
-	// cout << "	- read the actual frame" << endl;
-	if (!ni_colorFrame.isValid ()) {
-		print_error ("could not get the color frame", "do something about it");
-	}
-	// cout << "	- about to read depth frame" << endl;
 	/*### Step 1: get a userTrackerFrame from user_tracker, depth frame ###*/
 	nite::Status rc = user_tracker->readFrame(&userTrackerFrame);
-	if (rc != nite::STATUS_OK) {
-		print_error ("Display", "Could not get a next frame from user_tracker");
-	}
-	ni_depthFrame = userTrackerFrame.getDepthFrame();
+	if (rc != nite::STATUS_OK) print_error ("Display", "Could not get a next frame from user_tracker");
 
-
-	/*### Step 2: get a J_Skeleton out of it ###*/
+	/*### Step 2: get the UserData objects out of it ###*/
 	const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
-	J_Skeleton *skeleton = NULL;
-	/*### --- Note: For now, only deal with a single skeleton ---###*/
-	if (users.getSize() > 0) {
 
-		const nite::UserData & user = users[0];
+	std::vector <J_Skeleton*> skeletons;
+
+	for (int i=0;i<users.getSize(); i++) {
+
+		const nite::UserData & user = users[i];
 		if (user.isNew ()) {
 			user_tracker->startSkeletonTracking(user.getId());
 			user_tracker->startPoseDetection(user.getId(), nite::POSE_CROSSED_HANDS);
@@ -133,26 +91,19 @@ J_Frame * J_DeviceDelegate::readFrame () {
 		else if (!user.isLost()) {
 			if (users[0].getSkeleton().getState() == nite::SKELETON_TRACKED) {
 
-					nite::Skeleton nite_skeleton = users[0].getSkeleton ();
-					skeleton = new J_Skeleton (&nite_skeleton, user_tracker);
-					J_Joint *current_joint = skeleton->getJoint ((nite::JointType) 0);
+					nite::Skeleton nite_skeleton = users[i].getSkeleton ();
+					J_Skeleton *skeleton = new J_Skeleton (&nite_skeleton, user_tracker);
+					skeletons.push_back (skeleton);
 			}
 		}
 	}
-	else {
-		skeleton = NULL;
-	}
 
-
-	/*### Step 4: create the actual frame ###*/
-	J_VideoFrameRef *j_depth_frame = new J_VideoFrameRef (&ni_depthFrame);
-	J_VideoFrameRef *j_color_frame = new J_VideoFrameRef (&ni_colorFrame);
-	J_Frame * new_frame = new J_Frame (skeleton, j_depth_frame, j_color_frame);
-	return new_frame;
-
+	/*### Step 3: assemble and return the frame ###*/
+	openni::VideoFrameRef temp_frame = userTrackerFrame.getDepthFrame ();
+	J_VideoFrameRef *depth_frame = new J_VideoFrameRef (&temp_frame);
+	J_Frame *frame = new J_Frame (skeletons, depth_frame, NULL);
+	return frame;
 }
-
-
 
 
 

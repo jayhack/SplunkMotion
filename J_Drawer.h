@@ -76,22 +76,12 @@ private:
 	/*--- Drawing Utilities ---*/
 	void calculateHistogram	(float* pHistogram, int histogramSize, J_VideoFrameRef* depthFrame); 
 
+
 	/*################[ --- Private Drawing Functions --- ]############*/ 
-	/*--- Random Utilities ---*/
-	void glPrintString		(void *font, const char *str);
-	void DrawStatusLabel 	(nite::UserTracker* pUserTracker, const nite::UserData& user);
-	void DrawFrameId 		(nite::UserTracker* pUserTracker, J_Skeleton *skeleton, int frameId);
-	void DrawCenterOfMass 	(nite::UserTracker* pUserTracker, const nite::UserData& user);
-	void DrawBoundingBox 	(const nite::UserData& user);
-
 	/*--- Skeleton Drawing ---*/
-	void Draw_J_Limb 		(J_Joint* joint1, J_Joint* joint2, int color);
-	void Draw_J_Skeleton 	(J_Skeleton *skeleton);
-
-	/*--- Beat/Pop Indication ---*/
-	void	indicate_beat 		();
-	void	indicate_pop 		(J_Skeleton *skeleton);
-	void 	indicate_recording 	();
+	void draw_J_Limb 		(J_Joint* joint1, J_Joint* joint2, int color);
+	void draw_J_Skeleton 	(J_Skeleton *skeleton);
+	void draw_depth 		(J_VideoFrameRef *depth_frame);	
 
 
 
@@ -102,9 +92,7 @@ public:
 
 
 	/*--- Public Drawing Functions ---*/
-	void draw_depth_frame (J_VideoFrameRef *depth_frame);
-	void draw_color_frame (J_VideoFrameRef *color_frame);
-	void draw_frame (J_Frame * frame, bool is_recording);
+	void draw (J_Frame *frame);
 
 
 

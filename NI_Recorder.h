@@ -25,6 +25,7 @@
 /*--- My Files ---*/
 #include "NI_App.h"
 #include "J_DeviceDelegate.h"
+#include "J_SplunkDelegate.h"
 
 /*--- Constants ---*/
 #define MAX_FILENAME_LENGTH 150
@@ -42,16 +43,8 @@ private:
 	static NI_Recorder *self;
 
 	/*--- Device --*/
-	J_DeviceDelegate *device_delegate;
-
-	/*--- Recording Stats ---*/
-	bool is_recording;	
-	bool isRecording ();
-	void start_recording ();
-	void stop_recording ();
-	int current_recording_frame_number;
-	int current_frame_number;
-
+	J_DeviceDelegate *device_delegate;	//for getting frames from device
+	J_SplunkDelegate *splunk_delegate;	//for dumping frames into splunk
 
 	/*--- Keyboard/Display for OpenGL ---*/
 	void InitOpenGLHooks 		();
@@ -61,23 +54,17 @@ private:
 	void onkey 					(unsigned char key, int x, int y);
 	void display 				();
 
+
 public:
 
-
 	/*--- Constructor/Destructor ---*/
-	NI_Recorder 	(const char* file_path, int argc, char** argv);
+	NI_Recorder 	(string splunk_filepath, int argc, char** argv);
 	~NI_Recorder 	();
 
 
 	/*--- Getting user state, etc ---*/
 	void 			updateUserState	(const nite::UserData& user, uint64_t ts);
 	openni::Status	Run				();
-
-	/*--- Record ---*/
-	void record_jvid_frame (openni::VideoFrameRef *frame);
-	void record_skeleton (J_Skeleton *skeleton);
-	void record_both (openni::VideoFrameRef *frame, J_Skeleton *skeleton);
-
 
 
 };

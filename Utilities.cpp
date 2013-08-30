@@ -16,6 +16,7 @@ using namespace std;
 void print_error (const char* top_string, const char* bottom_string) {
 	
 	cout << "	Error: " << top_string << endl << "	--------------------" << endl << "	" << bottom_string << endl;
+	exit (1);
 }
 
 

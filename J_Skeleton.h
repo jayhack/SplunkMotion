@@ -48,12 +48,14 @@ private:
 	/*--- joints ---*/
 	J_Joint *joints [15];
 
-	/*--- beat/pop ---*/
-	bool beat;
-	bool pop;
 
 	/*--- initialization ---*/
 	void initialize ();
+
+	/*--- higher-level properties ---*/
+	nite::BoundingBox 	bounding_box;
+	nite::Point3f 		center_of_mass;
+
 
 
 public:
@@ -67,7 +69,8 @@ public:
 	~J_Skeleton ();
 
 	/*--- Computing Properties ---*/
-	nite::BoundingBox getBoundingBox ();
+	nite::BoundingBox 	get_bounding_box ();
+	nite::Point3f 		get_center_of_mass ();
 
 	/*--- Setters/Getters ---*/
 	bool		isValid 			();
@@ -84,7 +87,11 @@ public:
 	void 		setJointOrientation	(nite::JointType joint_type, nite::Quaternion new_orientation);
 
 
+	/*--- Dumping for splunk ---*/
+	string 		splunk_dump_string ();
+
 };
+
 
 
 #endif	//_J_SKELETON_H

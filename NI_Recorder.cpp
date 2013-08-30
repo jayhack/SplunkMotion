@@ -27,6 +27,7 @@
 #include "J_Skeleton.h"
 #include "J_Frame.h"
 #include "NI_Recorder.h"
+#include "J_SplunkDelegate.h"
 
 /*--- Namespaces ---*/
 using namespace std;
@@ -43,10 +44,10 @@ NI_Recorder* NI_Recorder::self = NULL;
  * ---------------------
  * initializes all forms of recording, though does not start writing to output
  */
-NI_Recorder::NI_Recorder (const char* file_path, int argc, char** argv) {
+NI_Recorder::NI_Recorder (string splunk_filepath, int argc, char** argv) {
 	self = this;
 
-	/*### Step 1: initialize the APIs ###*/
+	/*### Step 1: initialize the APIs (OpenNI, NiTE, OpenGL) ###*/
 	print_status ("Initialization (Recorder)", "Initializing APIs");
 	initialize_APIs (argc, argv);
 
@@ -54,13 +55,9 @@ NI_Recorder::NI_Recorder (const char* file_path, int argc, char** argv) {
 	print_status ("Initialization (Recorder)", "Creating Device Delegate");
 	device_delegate = new J_DeviceDelegate ();
 
-	/*### Step 3: initialize the storage delegate ###*/
-	print_status ("Initialization (Recorder)", "Creating Storage Delegate");
-	storage_delegate = new J_StorageDelegate (file_path, RECORD_MODE);
-
-	/*### Step 4: initialize current_frame_number ###*/
-	is_recording = false;
-	current_frame_number = 0;
+	/*### Step 3: initialize the splunk delegate ###*/
+	print_status ("Initialization (Recorder)", "Creating Splunk Delegate");
+	splunk_delegate = new J_SplunkDelegate (splunk_filepath);
 
 }
 
@@ -75,8 +72,8 @@ NI_Recorder::~NI_Recorder () {
 	delete device_delegate;
 
 	/*### Step 2: free all memory allocatd for the device delegate ###*/
-	print_status ("Finalization (Recorder)", "Deleting storage delegate");
-	delete storage_delegate;
+	print_status ("Finalization (Recorder)", "Deleting splunk delegate");
+	delete splunk_delegate;
 }
 
 
@@ -126,52 +123,26 @@ void NI_Recorder::onkey (unsigned char key, int x, int y) {
 		case 27:	
 			// Finalize();
 			exit (1);
-
-		/*### B: start recording ###*/
-		case 'r':
-			print_status ("Main operation", "Started recording");
-			start_recording ();
-			break;	
-
-		/*### P: stop recording ###*/
-		case 's':
-			print_status ("Main operation", "Stopped recording");
-			stop_recording ();
-			break;
 	}
 }
 
 void NI_Recorder::display () {
 
-	/*### Step 1: get the next J_Frame ###*/
-	// print_status ("Display", "Getting frame");
-	J_Frame *frame = device_delegate->readFrame ();
-	J_Skeleton *skeleton = frame->get_skeleton ();
-
-
-	/*### Step 2: set the beat if appropriate ###*/
-	if (skeleton != NULL) {
-		if ((current_frame_number % FRAMES_PER_BEAT) == 0) 	skeleton->setBeat (true);
-		else 												skeleton->setBeat (false);
-	}
-
-
-	/*### Step 3: record it ###*/
-	if (isRecording ()) {
-		// print_status("Display", "Writing frame");
-		J_Skeleton *skeleton = frame->get_skeleton ();
-
-		storage_delegate->write (frame);
-	}
+	/*### Step 1: get a list of all skeletons ###*/
+	J_Frame * frame = device_delegate->get_frame ();
 
 	/*### Step 2: draw it to the screen ###*/
 	// print_status ("Display", "Drawing frame");
-	drawer.draw_frame (frame, isRecording());
+	drawer.draw (frame);
 
-	/*### Step 3: free all memory dedicated to the frame, increment frame number ###*/
-	current_frame_number++;
+	/*### Step 3: dump it to splunk ###*/
+	// print_status ("Display", "Dumping to splunk");
+	std::vector <J_Skeleton *> skeletons;
+	frame->get_skeletons(&skeletons);
+	splunk_delegate->dump (skeletons);
+
+	/*### Step 4: free all memory dedicated to the frame, increment frame number ###*/
 	delete frame;
-
 }
 
 /* Function: Run
@@ -183,33 +154,6 @@ openni::Status NI_Recorder::Run() {
 	return openni::STATUS_OK;
 }
 
-
-
-
-/*########################################################################################################################*/
-/*###############################[--- Recording Manipulation ---] ########################################################*/
-/*########################################################################################################################*/
-/* Function: is_recording
- * ----------------------
- * returns wether we are recording or not.
- */
-bool NI_Recorder::isRecording () {
-
-	return is_recording;
-}
-
-/* Function: (start|stop)_recording
- * -------------------------
- * starts/stops the recording; stop_recording () will also terminate the program.
- */
-void NI_Recorder::start_recording () {
-	current_recording_frame_number = 0;
-	is_recording = true;
-}
-void NI_Recorder::stop_recording () {
-	is_recording = false;
-	exit (0);
-}
 
 
 

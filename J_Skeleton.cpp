@@ -15,9 +15,13 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <ctime>
 
 /*--- NiTE ---*/
 #include "NiTE.h"
+
+/*--- cpp_json ---*/
+#include "cpp_json/json.h"
 
 /*--- My Files ---*/
 #include "J_Skeleton.h"
@@ -39,8 +43,6 @@ using namespace std;
 void J_Skeleton::initialize () {
 
 	/*### Step 1: initialize timestamp, pop, is_valid ###*/
-	beat 			= false;
-	pop 			= false;
 	is_valid		= false;
 	timestamp 		= -1;
 				
@@ -141,7 +143,7 @@ J_Skeleton::~J_Skeleton () {
  * ------------------------
  * returns the convex hull (bounding box) of the current skeleton
  */
-nite::BoundingBox J_Skeleton::getBoundingBox () {
+nite::BoundingBox J_Skeleton::get_bounding_box () {
 
 	nite::Point3f top_left, bottom_right;
 
@@ -160,14 +162,105 @@ nite::BoundingBox J_Skeleton::getBoundingBox () {
 		if (position_absolute.y > bottom_right.y) 	bottom_right.y = position_absolute.y;			
 
 	}
-	return nite::BoundingBox (top_left, bottom_right);
+	bounding_box =  nite::BoundingBox (top_left, bottom_right);
+	return bounding_box;
+}
+
+
+/* Function: get_center_of_mass 
+ * ----------------------------
+ * computes the center of mass, stores it in the instance variable center_of_mass,
+ * then returns it. (this is in relative coordinates, all that we really need)
+ */
+nite::Point3f J_Skeleton::get_center_of_mass () {
+
+	float x_total = 0;
+	float y_total = 0;
+	float z_total = 0;
+	for (int i=0;i<JSKEL_NUM_OF_JOINTS;i++) {
+		nite::Point3f position =  joints[i]->getPosition ();
+		x_total += position.x;
+		y_total += position.y;
+		z_total += position.z;
+	}
+	float x_avg = x_total / float(JSKEL_NUM_OF_JOINTS);
+	float y_avg = y_total / float(JSKEL_NUM_OF_JOINTS);
+	float z_avg = z_total / float(JSKEL_NUM_OF_JOINTS);
+
+	center_of_mass = nite::Point3f (x_avg, y_avg, z_avg);
+	return center_of_mass;
 }
 
 
 
 
 
+/*########################################################################################################################*/
+/*###############################[--- Splunk Dumping ---]################################################################*/
+/*########################################################################################################################*/
 
+
+/* Function: splunk_dump_string
+ * ----------------------------
+ * returns a string that is a splunk-readable representation
+ * of this particular skeleton.
+ */
+string J_Skeleton::splunk_dump_string () {
+
+	json::object json_skel;
+	stringstream dump_stream;
+
+	/*### Step 1: timestamp ###*/
+	/*--- Note: for now, default to the time splunk enters it in ---*/
+	// struct timeval tv;
+	// gettimeofday (&tv, NULL);
+	// json::object timestamp;
+	// timestamp.insert ("seconds", tv.tv_sec);
+	// timestamp.insert ("microseconds", tv.tv_usec);
+	// json_skel.insert("timestamp", timestamp);
+
+
+	/*### Step 2: center of mass ###*/
+	get_center_of_mass ();
+	json::object json_center_of_mass;
+	json_center_of_mass.insert ("x", center_of_mass.x);
+	json_center_of_mass.insert ("y", center_of_mass.y);
+	json_center_of_mass.insert ("z", center_of_mass.z);
+	json_skel.insert ("center_of_mass", json_center_of_mass);
+
+
+	/*### Step 3: bounding box ###*/
+	get_bounding_box ();
+	json::object json_bounding_box;
+	json::object top_left;
+	json::object bottom_right;
+	top_left.insert ("x", bounding_box.min.x);
+	top_left.insert ("y", bounding_box.min.y);
+	bottom_right.insert ("x", bounding_box.max.x);
+	bottom_right.insert ("y", bounding_box.max.y);	
+	json_bounding_box.insert ("top_left", top_left);
+	json_bounding_box.insert ("bottom_right", bottom_right);
+	json_skel.insert ("bounding_box", json_bounding_box);
+
+	/*### Step 4: joints ###*/
+	json::object json_joints;
+	for (int i=0;i<JSKEL_NUM_OF_JOINTS;i++) {
+
+		J_Joint * current_joint = joints[i];
+		json::object json_joint;
+		json_joint.insert ("x", current_joint->getPosition().x);
+		json_joint.insert ("y", current_joint->getPosition().y);		
+		json_joint.insert ("z", current_joint->getPosition().z);
+
+		stringstream index;
+		index << i;
+		json_joints.insert (index.str().c_str(), json_joint); 
+	}
+	json_skel.insert ("joints", json_joints);
+
+	dump_stream << "[" << json::pretty_print (json_skel) << "]" << endl;
+	return dump_stream.str();
+}
 
 
 
@@ -211,27 +304,6 @@ bool J_Skeleton::isValid () {
  	timestamp = new_timestamp;
  }	
 
-/* Setter/Getter: beat
- * ----------------------------
- * gets/sets the beat
- */
-bool J_Skeleton::getBeat () {
- 	return beat;
-}
-void J_Skeleton::setBeat (bool beat_value) {
- 	beat = beat_value;
-}	
-
-/* Setter/Getter: pop
- * ------------------
- * gets/sets the beat
- */
-bool J_Skeleton::getPop () {
- 	return pop;
-}
-void J_Skeleton::setPop(bool pop_value) {
- 	pop = pop_value;
-}	
 
 
 /* Setter/Getter: get/setJoint

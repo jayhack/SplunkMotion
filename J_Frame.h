@@ -33,7 +33,7 @@ class J_Frame {
 private:
 
 	/*--- Data ---*/
-	J_Skeleton			* skeleton;
+	std::vector <J_Skeleton	*> skeletons;
 	J_VideoFrameRef 	* depth_frame;
 	J_VideoFrameRef		* color_frame;
 
@@ -44,12 +44,13 @@ public:
 
 	/*--- Constructors ---*/
 	J_Frame ();
-	J_Frame (J_Skeleton *new_skeleton, J_VideoFrameRef *new_depth_frame, J_VideoFrameRef *new_color_frame);
+	J_Frame (std::vector<J_Skeleton *> new_skeletons, J_VideoFrameRef *new_depth_frame, J_VideoFrameRef *new_color_frame);
+	~J_Frame ();
 
 	/*--- Getters ---*/
-	J_Skeleton 			*get_skeleton 		();
-	J_VideoFrameRef 	*get_depth_frame 	();
-	J_VideoFrameRef		*get_color_frame	();
+	void						get_skeletons 		(std::vector <J_Skeleton*> *fill_skeletons);
+	J_VideoFrameRef * 			get_depth_frame 	();
+	J_VideoFrameRef *			get_color_frame		();
 
 	/*--- Misc ---*/
 	bool isValid ();

@@ -1,6 +1,11 @@
 include ./CommonDefs.mak
 
 
+# BOOST_LOCATION
+# --------------
+# location of boost in the filesystem
+BOOST_INCLUDE = /Users/jhack/Programming/Boost		
+
 # NiTE_LOCATION/INCLUDE/REDIST
 # ----------------------------
 # Where NiTE is located on your filesystem
@@ -26,18 +31,20 @@ BIN_DIR = ./Bin
 # INC_DIRS: 
 # ---------
 # list of all additional include directories
-INC_DIRS 	+= $(OPENNI2_INCLUDE) 			#OpenNI 
-INC_DIRS 	+= $(NITE2_INCLUDE)			#NiTE
-INC_DIRS 	+= ../../../External							#OpenGL?
-INC_DIRS 	+= ../../../External/GL 						#OpenGL?
-# INC_DIRS 	+= /opt/local/include 							#OpenCV
-# INC_DIRS 	+= /opt/local/include/opencv 					#OpenCV
+INC_DIRS 	+= $(OPENNI2_INCLUDE) 					#OpenNI 
+INC_DIRS 	+= $(NITE2_INCLUDE)						#NiTE
+INC_DIRS	+= $(BOOST_INCLUDE)						#Boost
+INC_DIRS 	+= ../../../External					#OpenGL?
+INC_DIRS 	+= ../../../External/GL 				#OpenGL?
+# INC_DIRS 	+= /opt/local/include 					#OpenCV
+# INC_DIRS 	+= /opt/local/include/opencv 			#OpenCV
 
 
 # SRC_FILES:
 # ----------
 # list of all .cpp files to compile into the project
-SRC_FILES = *.cpp 				#all source files in main directory
+SRC_FILES 	= 	*.cpp 				#all source files in main directory
+SRC_FILES 	+= 	SimpleJson/*.cpp 	#all source files in SimpleJson
 
 
 # LIB_DIRS:
